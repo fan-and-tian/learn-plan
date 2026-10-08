@@ -17,7 +17,7 @@ def fib_cached(n):
         return n   
     else:
         cache[n] = fib_cached(n-1) + fib_cached(n-2)
-        return cache[n]
+        return cache[n] 
 # 测试正确性
 assert fib_recursive(0) == 0
 assert fib_recursive(1) == 1
