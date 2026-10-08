@@ -1,7 +1,6 @@
-L = [('Bob', 75), ('Adam', 92), ('Bart', 66), ('Lisa', 88)]
+def is_odd(n):
+    return lambda n: n % 2 == 1
 
-def by_score(t):
-    return t[0]
+L = list(filter(is_odd(1), range(1, 20)))
 
-L2 = sorted(L, key=by_score)
-print(L2)
+print(L)
