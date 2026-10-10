@@ -1,0 +1,79 @@
+#kNN 的距离计算必须向量化（一行矩阵运算，不许写双重 for 循环）；记录 k 取
+#3/5/7 时的准确率小表；可视化 5 个分错的样本并写一句话原因
+#加载数据
+from tkinter import _test
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+plt.rcParams['font.sans-serif'] = ['SimHei']
+plt.rcParams['axes.unicode_minus'] = False
+
+from sklearn.datasets import load_iris
+iris = load_iris()
+x,y = iris['data'],iris['target']
+
+x_train,y_train = x[0:120],y[0:120]
+x_test,y_test = x[120:150],y[120:150]
+
+print('训练集',x_train.shape,"测试集",x_test.shape)
+#向量化距离
+def compute_distance(x_test,x_train):
+    train_norm = np.sum(x_train**2,axis = 1)
+    test_norm = np.sum(x_test**2,axis = 1)
+    dists = np.sqrt(
+        train_norm[None,:]
+        -2*np.dot(x_test,x_train.T)
+        +test_norm[:,None]
+    )
+    return dists
+
+def knn_predict(X_test, X_train, y_train, k):
+    dists = compute_distance(X_test, X_train)
+    preds = np.zeros(len(X_test), dtype=int)
+    for i in range(len(X_test)):
+        # 取距离最近的k个训练样本的标签
+        nearest_k = y_train[np.argsort(dists[i])[:k]]
+        # 投票：出现次数最多的标签
+        preds[i] = np.bincount(nearest_k).argmax()
+    return preds
+
+print("k值  准确率")
+print("----------")
+for k in [3, 5, 7]:
+    preds = knn_predict(x_test, x_train, y_train, k)
+    acc = np.mean(preds == y_test)
+    print(f"k={k}   {acc:.4f}")
+
+wrong = np.where(preds != y_test)[0][:5]
+
+fig, axes = plt.subplots(1, 5, figsize=(15, 3))
+for i, idx in enumerate(wrong):
+    axes[i].scatter(x_test[:, 0], x_test[:, 1], c=y_test, cmap='coolwarm', alpha=0.3)
+    axes[i].scatter(x_test[idx, 0], x_test[idx, 1], c='red', s=200, marker='x')
+    axes[i].set_title(f"真实:{iris['target_names'][y_test[idx]]}\n预测:{iris['target_names'][preds[idx]]}")
+plt.suptitle("k=7 分错的样本")
+plt.tight_layout()
+plt.show()
+
+import time
+
+X_small_test = x_test[:100]   # 用100个测试样本对比
+
+# 向量化版
+start = time.time()
+dists_fast = compute_distance(X_small_test, x_train)
+fast_time = time.time() - start
+
+# for循环版（对照用，只在小数据上跑）
+start = time.time()
+dists_slow = np.zeros((100, len(x_train)))
+for i in range(100):
+    for j in range(len(x_train)):
+        dists_slow[i, j] = np.sqrt(np.sum((X_small_test[i] - x_train[j]) ** 2))
+slow_time = time.time() - start
+
+print(f"向量化: {fast_time:.3f}s")
+print(f"for循环: {slow_time:.3f}s")
+print(f"快了 {slow_time / fast_time:.0f} 倍")
+
